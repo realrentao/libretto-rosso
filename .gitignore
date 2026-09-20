@@ -1,0 +1,10 @@
+# build scripts & logs (not needed for GitHub Pages runtime)
+build/
+# temp / probe artifacts
+_*.txt
+_*.log
+_*.mp3
+_edge_test_*
+# OS files
+Thumbs.db
+.DS_Store
