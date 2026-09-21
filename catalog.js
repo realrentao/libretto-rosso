@@ -36,7 +36,7 @@
     stat.textContent =
       filter
         ? '找到 ' + list.length + ' / ' + DATA.stories.length + ' 篇'
-        : '共 ' + DATA.stories.length + ' 篇童话 · 点击阅读';
+        : '';
   }
 
   search.addEventListener('input', function () {
