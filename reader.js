@@ -141,17 +141,23 @@
   var playAll = false;    // 播放全篇模式：从第一句连续播到结尾
   var altZhDone = false; // 意中交替模式下，当前句中文部分是否已播
   var loadingNext = false; // 自动连播换源时的过渡暂停，不触发菜单显示
+  var manualPause = false; // 用户手动暂停（应当显示菜单）
+  // 判断是否处于“连续自动播放链”中（意→中 交替、跨段落连播）：
+  // 链中换源产生的过渡暂停/自然结束不应闪出菜单，须等整条链播完才显示
+  function isChaining() {
+    if (playAll && cur < paras.length - 1) return true;
+    if (prefs.cont && cur < paras.length - 1) return true;
+    if (prefs.lang === 'alt' && !altZhDone && cur >= 0 && paras[cur] &&
+        paras[cur].audio_zh && paras[cur].audio_zh.length) return true;
+    return false;
+  }
 
-  // 自动滚动：仅当目标段落不在可视区内时才滚（不抢用户手动滚动）
+  // 自动滚动：播放时画面跳到当前句子起始位置（block:'start'），便于跟读
   function scrollToPara(i) {
     if (!prefs.follow) return;
     var el = document.querySelector('.para[data-idx="' + i + '"]');
-    var rd = $('reader');
-    if (!el || !rd) return;
-    var rr = rd.getBoundingClientRect();
-    var er = el.getBoundingClientRect();
-    var visible = er.top >= rr.top + 8 && er.bottom <= rr.bottom - 8;
-    if (!visible) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function setAudioSrc(p) {
@@ -191,7 +197,7 @@
     audio.play().then(function () { playing = true; $('btnPlay').textContent = '❚❚'; })
       .catch(function () { playing = false; $('btnPlay').textContent = '▶'; });
   }
-  function pause() { audio.pause(); playing = false; $('btnPlay').textContent = '▶'; }
+  function pause() { manualPause = true; audio.pause(); playing = false; $('btnPlay').textContent = '▶'; }
   function toggle() { if (playing) pause(); else play(); }
 
   function markNoAudio(i) {
@@ -200,7 +206,7 @@
   }
 
   $('btnPlay').addEventListener('click', toggle);
-  $('btnPlayAll').addEventListener('click', function () { playAll = true; $('btnPlayAll').classList.add('active'); setCur(0, { play: true }); });
+  $('btnPlayAll').addEventListener('click', function () { playAll = true; $('btnPlayAll').classList.add('active'); setBars(false); setCur(0, { play: true }); });
   $('btnPrevPara').addEventListener('click', function () { if (cur > 0) { playAll = false; $('btnPlayAll').classList.remove('active'); setCur(cur - 1, { play: playing }); } });
   $('btnNextPara').addEventListener('click', function () { if (cur < paras.length - 1) { playAll = false; $('btnPlayAll').classList.remove('active'); setCur(cur + 1, { play: playing }); } });
   $('btnRepeat').addEventListener('click', function () { if (cur >= 0) { audio.currentTime = 0; play(); } });
@@ -225,11 +231,15 @@
     playing = true; $('btnPlay').textContent = '❚❚';
     // 段落切换重启播放时：仅当菜单是"播放自动隐藏"状态才重新倒计时；
     // 用户正按住菜单或刚唤出菜单时不得打扰
-    if (!holdActive && !userRevealed && !document.body.classList.contains('immersive')) barsHideSoon(1600);
+    if (!holdActive && !userRevealed && !document.body.classList.contains('immersive')) {
+      if (isChaining()) setBars(false);   // 连播中：立即隐藏菜单，不延迟
+      else barsHideSoon(1600);
+    }
   });
   audio.addEventListener('pause', function () {
     playing = false; $('btnPlay').textContent = '▶';
-    if (!loadingNext) barsShow();  // 自动换源导致的过渡暂停不展示菜单
+    if (manualPause) { manualPause = false; barsShow(); }   // 用户手动暂停 → 显示菜单
+    else if (!loadingNext && !isChaining()) barsShow();     // 自动换源/连播中的过渡暂停不展示菜单
   });
   audio.addEventListener('error', function () { if (cur >= 0) markNoAudio(cur); });
   audio.addEventListener('ended', function () {
