@@ -52,7 +52,7 @@
         (s.title_zh || '').toLowerCase().indexOf(q) >= 0 ||
         s.id.indexOf(q) >= 0;
       if (!show) return '';
-      return '<a class="' + on.trim() + '" data-go="' + i + '">' +
+      return '<a class="' + on.trim() + '" data-go="' + i + '" title="' + esc(s.title_it) + ' · ' + esc(s.title_zh) + '">' +
         '<span class="cn-no">' + s.id + '</span>' +
         '<span class="cn-it">' + esc(s.title_it) + '</span>' +
         '<span class="cn-zh">' + esc(s.title_zh) + '</span></a>';
@@ -96,7 +96,9 @@
 
   // ---------- mode / font / switches ----------
   function applyMode() {
-    document.body.className = 'mode-' + prefs.mode;
+    // 只增删 mode-* 类，不能整体覆写 className（否则会抹掉 immersive 等状态类）
+    document.body.classList.remove('mode-pair', 'mode-col', 'mode-it', 'mode-zh');
+    document.body.classList.add('mode-' + prefs.mode);
     Array.prototype.forEach.call(document.querySelectorAll('#modeSeg button'), function (b) {
       b.classList.toggle('on', b.dataset.mode === prefs.mode);
     });
@@ -184,6 +186,10 @@
     altZhDone = false;
     loadingNext = true;            // 换源过程中的过渡暂停不展示菜单
     setAudioSrc(p);
+    // 换句后进度条/时间立刻归零，避免停留在上一句的位置（暂停时 timeupdate 不会触发）
+    $('seek').value = 0;
+    $('tCur').textContent = '0:00';
+    $('tDur').textContent = '0:00';
     try { audio.load(); } catch (e) {}
     if (opts.play) {
       play();
@@ -221,8 +227,12 @@
     if (playBtn) {
       setCur(i, { play: true }); return;
     }
-    // 单击段落正文：朗读该段；Shift+单击：从此段开始连续播放
-    prefs.cont = e.shiftKey ? true : prefs.cont;
+    // 单击段落正文：朗读该段；Shift+单击：从此段开始连续播放（同步勾选框并落盘）
+    if (e.shiftKey && !prefs.cont) {
+      prefs.cont = true;
+      $('chkCont').checked = true;
+      savePrefs();
+    }
     setCur(i, { play: true });
   });
 
@@ -255,6 +265,9 @@
     }
     if ((prefs.cont || playAll) && cur < paras.length - 1) { setCur(cur + 1, { play: true }); }
     else { playing = false; playAll = false; $('btnPlay').textContent = '▶'; $('btnPlayAll').classList.remove('active'); barsShow(); }
+  });
+  audio.addEventListener('loadedmetadata', function () {
+    $('tDur').textContent = fmt(audio.duration);
   });
   audio.addEventListener('timeupdate', function () {
     if (!audio.duration) return;
@@ -353,8 +366,9 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.target.tagName === 'INPUT') return;
-    if (e.code === 'Space') { e.preventDefault(); toggle(); }
-    else if (e.code === 'ArrowLeft') { if (cur > 0) setCur(cur - 1, { play: playing }); }
+    if (e.code === 'Space') { e.preventDefault(); toggle(); return; }
+    if (!paras || !paras.length) return;   // 故事数据尚未就绪时按方向键会抛错
+    if (e.code === 'ArrowLeft') { if (cur > 0) setCur(cur - 1, { play: playing }); }
     else if (e.code === 'ArrowRight') { if (cur < paras.length - 1) setCur(cur + 1, { play: playing }); }
     else if (e.key === 'r' || e.key === 'R') { if (cur >= 0) { audio.currentTime = 0; play(); } }
   });
