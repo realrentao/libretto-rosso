@@ -67,13 +67,18 @@
   $('sideSearch').addEventListener('input', renderSidebar);
 
   // ---------- content ----------
+  var sentTotal = 0;   // 正文句数（出处单元 src 不计入）
   function renderContent() {
+    // 句序号：出处单元(src)不占号，只挂一个「出处」标签
+    var seq = 0;
+    paras.forEach(function (p) { p.no = p.src ? 0 : ++seq; });
+    sentTotal = seq;
     var head =
       '<div class="chapter-head">' +
-      '<div class="ch-no">N. ' + story.id + ' / ' + DATA.stories.length + ' · 共 ' + paras.length + ' 句</div>' +
+      '<div class="ch-no">N. ' + story.id + ' / ' + DATA.stories.length + ' · 共 ' + seq + ' 句</div>' +
       '<div class="ch-it">' + esc(story.title_it) + '</div>' +
       '<div class="ch-zh">' + esc(story.title_zh) + '</div></div>';
-    // 句级单元：一句意大利语 + 对应的一句中文，按原段落(sec)分组保持章节呼吸感
+    // 句级单元：一句意大利语 + 对应的一句中文，按所属语录(sec)分组保持呼吸感
     var body = '';
     var curSec = null;
     paras.forEach(function (p, i) {
@@ -84,9 +89,9 @@
         curSec = sec;
       }
       var zh = p.zh ? '<div class="zh-line">' + esc(p.zh) + '</div>' : '';
-      body += '<div class="para" data-idx="' + i + '">' +
+      body += '<div class="para' + (p.src ? ' is-src' : '') + '" data-idx="' + i + '">' +
         '<div class="para-body">' +
-        '<span class="s-no">' + (i + 1) + '</span>' +
+        '<span class="s-no' + (p.src ? ' src' : '') + '">' + (p.src ? '出处' : p.no) + '</span>' +
         '<div class="it-line">' + esc(p.it) + '</div>' + zh + '</div></div>';
     });
     if (curSec !== null) body += '</div>';
@@ -179,8 +184,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('.para'), function (el) {
       el.classList.toggle('playing', +el.dataset.idx === i);
     });
-    $('readProgress').textContent = '第 ' + (i + 1) + ' 句 / ' + paras.length;
-    $('nowTitle').textContent = '第 ' + (i + 1) + ' 句 · ' + story.title_it;
+    $('readProgress').textContent = p.src
+      ? ('出处 / 共 ' + sentTotal + ' 句')
+      : ('第 ' + p.no + ' 句 / 共 ' + sentTotal + ' 句');
+    $('nowTitle').textContent = (p.src ? '出处' : ('第 ' + p.no + ' 句')) + ' · ' + story.title_it;
     scrollToPara(i);
     audio.loop = false;
     altZhDone = false;

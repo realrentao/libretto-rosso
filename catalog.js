@@ -26,8 +26,10 @@
       .map(function (s) {
         return (
           '<a class="card" href="lettura.html?id=' + encodeURIComponent(s.id) + '">' +
-          '<span class="card-no">' + s.id + '</span>' +
+          '<span class="card-head">' +
           '<span class="card-it"><span class="card-dot"></span>' + esc(s.title_it) + '</span>' +
+          '<span class="card-no">' + s.id + '</span>' +
+          '</span>' +
           '<span class="card-zh">' + esc(s.title_zh) + '</span>' +
           '</a>'
         );

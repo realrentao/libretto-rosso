@@ -67,13 +67,16 @@ a{color:inherit}
   box-shadow:0 1px 2px rgba(60,40,30,.03);
 }
 .card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--accent)}
+/* 卡片头行：标题（左，可换行）+ 编号（右，固定不换行）。
+   用 flex 而非绝对定位，从根本上避免编号压住长标题的末字（06/22 卡曾出现“标题后多一个小记号”）。 */
+.card .card-head{display:flex;align-items:flex-start;gap:10px}
 .card .card-no{
-  position:absolute;top:14px;right:16px;font-size:11px;color:var(--ink-faint);
-  font-variant-numeric:tabular-nums;letter-spacing:.5px;
+  flex:0 0 auto;font-size:11px;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums;letter-spacing:.5px;padding-top:4px;
 }
 .card .card-it{
+  flex:1 1 auto;min-width:0;
   font-size:16.5px;font-weight:600;color:var(--accent-deep);line-height:1.35;
-  margin-right:30px;padding-right:4px;
 }
 .card .card-zh{
   font-size:13px;color:var(--ink-soft);margin-top:7px;letter-spacing:.5px;
@@ -163,9 +166,9 @@ a{color:inherit}
 .chapter-head .ch-it{font-size:30px;font-weight:700;color:var(--accent-deep);margin:6px 0 0;letter-spacing:.5px;line-height:1.2}
 .chapter-head .ch-zh{font-size:15px;color:var(--ink-faint);margin-top:7px;letter-spacing:1px;font-family:"Source Han Serif SC","Songti SC","Microsoft YaHei",sans-serif}
 
-/* 句级单元：一句意大利语 + 对应的一句中文 */
+/* 句级单元：一句意大利语 + 对应的一句中文；每个 .sect = 一条语录 */
 .sect{margin:0}
-.sect+.sect{padding-top:0;border-top:1px dashed var(--line-soft)}
+.sect+.sect{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line-soft)}
 .para{
   border:0;border-left:3px solid transparent;border-radius:6px;
   padding:7px 12px;margin:0 0 2px;position:relative;
@@ -181,6 +184,13 @@ a{color:inherit}
   font-variant-numeric:tabular-nums;letter-spacing:.3px;user-select:none;
 }
 .para.playing .s-no{opacity:1;color:var(--accent);font-weight:700}
+
+/* 出处单元（src）：单列、字号收小、色调减弱，不占句序号 */
+.para.is-src{padding-top:3px;padding-bottom:3px;opacity:.8}
+.para.is-src .it-line{font-size:calc(var(--fs) * .8);line-height:1.6;color:var(--ink-soft);font-style:italic}
+.para.is-src .zh-line{font-size:calc(var(--fs) * .72);line-height:1.6;color:var(--ink-soft)}
+.s-no.src{font-size:9.5px;letter-spacing:0;font-style:normal}
+.para.playing.is-src{opacity:1}
 
 /* pre-wrap：保留原文里的换行（引文 / 出处分行），与中文行保持一致 */
 .it-line{font-size:var(--fs);line-height:1.8;color:var(--ink);letter-spacing:.1px;white-space:pre-wrap}
@@ -273,7 +283,7 @@ body.immersive #player{transform:translateY(110%);opacity:0}
   .wrap{padding:0 14px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:18px 0 50px}
   .card{padding:12px 13px}
-  .card .card-it{font-size:14.5px;margin-right:0;padding-right:0}
+  .card .card-it{font-size:14.5px}
   .card .card-zh{font-size:11.5px;margin-top:5px}
-  .card .card-no{position:static;display:block;text-align:right;margin-top:2px}
+  .card .card-no{font-size:10.5px;padding-top:2px}
 }
